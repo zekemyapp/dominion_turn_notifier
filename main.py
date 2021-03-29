@@ -15,6 +15,8 @@ URL_PATTERN_GAME = 'https://dom5.snek.earth/api/games/%s'
 
 GAME_ID = None
 
+cached_state = {}
+
 class ControllerType(Enum):
     NONE = 0
     HUMAN = 1
@@ -44,15 +46,28 @@ def error_no_id():
 '''
 def get_status():
     if GAME_ID is None:
-        return error_no_id()
+        return (True, True, error_no_id())
     json_data = fetch_game_status()
     nations = json_data['nations']
     cache = ""
+    changed = False
+    all_done = True
     for nation in nations:
+        is_done = (TurnState(int(nation['turnplayed'])) == TurnState.DONE)
         if ControllerType(int(nation['controller'])) is ControllerType.HUMAN:
+            if nation['nationid'] in cached_state :
+                if cached_state[nation['nationid']] != is_done:
+                    changed = True
+            else:
+                changed = True
+
+            if (TurnState(int(nation['turnplayed'])) != TurnState.WAITING):
+                all_done = False
+
+            cached_state[nation['nationid']] = is_done    
             current = nation['name'] + ': ' + TurnState(int(nation['turnplayed'])).name
             cache += current + "\n"
-    return cache
+    return (changed, all_done, cache)
 
 '''
 @return user friendly string of players with pending turns
@@ -117,8 +132,8 @@ async def set_reminder(ctx):
     time_now = datetime.datetime.utcnow()
     time_dt = datetime.timedelta(seconds = 60)
     time_now += time_dt
-    # bot.timer_manager.create_timer("reminder", time_now, args=(ctx.channel.id, ctx.author.id, 5))
-    # TODO: Only allow one timer
+    bot.timer_manager.clear()
+    bot.timer_manager.create_timer("reminder", time_now, args=(ctx.channel.id, ctx.author.id, 60))
 
 @bot.command()
 async def stop_reminder(ctx):
@@ -130,8 +145,14 @@ async def on_reminder(channel_id, author_id, seconds):
     time_dt = datetime.timedelta(seconds = seconds)
     time_now += time_dt
     bot.timer_manager.create_timer("reminder", time_now, args=(channel_id, author_id, seconds))
+
+    is_changed, all_done, cache = get_status()
+    print("timer is running:\n"+str(is_changed)+"\n"+str(all_done)+"\n"+cache)
     channel = bot.get_channel(channel_id)
-    # TODO: Check if there was a change in state beforing sending message
-    # await channel.send(get_pending_turns())
+    if (is_changed and all_done):
+        await channel.send("Attention Pretenders!\nA new turn has started\n"+cache)
+    elif (is_changed):
+        await channel.send("A Pretender has moved!\n"+cache)
+
 
 bot.run(TOKEN)
