@@ -100,8 +100,7 @@ bot.timer_manager = timers.TimerManager(bot)
 async def on_ready():
     for guild in bot.guilds:
         if (guild.name == GUILD):
-            print(bot.user + ' is connected to the following guild:\n'
-                + guild.name)
+            print(bot.user.name + ' is connected to the following guild:\n' + guild.name)
 
 @bot.command()
 async def help_dom(ctx):
