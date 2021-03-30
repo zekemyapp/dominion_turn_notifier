@@ -51,7 +51,7 @@ def get_status():
     nations = json_data['nations']
     cache = ""
     changed = False
-    all_done = True
+    all_done = False
     for nation in nations:
         is_done = (TurnState(int(nation['turnplayed'])) == TurnState.DONE)
         if ControllerType(int(nation['controller'])) is ControllerType.HUMAN:
@@ -61,8 +61,8 @@ def get_status():
             else:
                 changed = True
 
-            if (TurnState(int(nation['turnplayed'])) != TurnState.WAITING):
-                all_done = False
+            if cached_state[nation['nationid']] and not is_done:
+                all_done = True
 
             cached_state[nation['nationid']] = is_done    
             current = nation['name'] + ': ' + TurnState(int(nation['turnplayed'])).name
@@ -127,10 +127,10 @@ async def status(ctx):
 @bot.command()
 async def set_reminder(ctx):
     time_now = datetime.datetime.utcnow()
-    time_dt = datetime.timedelta(seconds = 60)
+    time_dt = datetime.timedelta(seconds = 10)
     time_now += time_dt
     bot.timer_manager.clear()
-    bot.timer_manager.create_timer("reminder", time_now, args=(ctx.channel.id, ctx.author.id, 60))
+    bot.timer_manager.create_timer("reminder", time_now, args=(ctx.channel.id, ctx.author.id, 600))
     await ctx.send("Turn notifier started.")
 
 
@@ -151,8 +151,6 @@ async def on_reminder(channel_id, author_id, seconds):
     channel = bot.get_channel(channel_id)
     if (is_changed and all_done):
         await channel.send("Attention Pretenders!\nA new turn has started\n")
-    elif (is_changed):
-        await channel.send("A Pretender has moved!\n"+cache)
 
 
 bot.run(TOKEN)
