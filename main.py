@@ -100,10 +100,8 @@ bot.timer_manager = timers.TimerManager(bot)
 async def on_ready():
     for guild in bot.guilds:
         if (guild.name == GUILD):
-            print(
-                f'{bot.user} is connected to the following guild:\n'
-                f'{guild.name}(id: {guild.id})'
-            )
+            print(bot.user + ' is connected to the following guild:\n'
+                + guild.name)
 
 @bot.command()
 async def help_dom(ctx):
@@ -134,10 +132,13 @@ async def set_reminder(ctx):
     time_now += time_dt
     bot.timer_manager.clear()
     bot.timer_manager.create_timer("reminder", time_now, args=(ctx.channel.id, ctx.author.id, 60))
+    await ctx.send("Turn notifier started.")
+
 
 @bot.command()
 async def stop_reminder(ctx):
     bot.timer_manager.clear()
+    await ctx.send("Turn notifier stopped.")
 
 @bot.event
 async def on_reminder(channel_id, author_id, seconds):
@@ -150,7 +151,7 @@ async def on_reminder(channel_id, author_id, seconds):
     print("timer is running:\n"+str(is_changed)+"\n"+str(all_done)+"\n"+cache)
     channel = bot.get_channel(channel_id)
     if (is_changed and all_done):
-        await channel.send("Attention Pretenders!\nA new turn has started\n"+cache)
+        await channel.send("Attention Pretenders!\nA new turn has started\n")
     elif (is_changed):
         await channel.send("A Pretender has moved!\n"+cache)
 
