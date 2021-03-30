@@ -58,11 +58,10 @@ def get_status():
             if nation['nationid'] in cached_state :
                 if cached_state[nation['nationid']] != is_done:
                     changed = True
+                    if cached_state[nation['nationid']] and not is_done:
+                        all_done = True
             else:
                 changed = True
-
-            if cached_state[nation['nationid']] and not is_done:
-                all_done = True
 
             cached_state[nation['nationid']] = is_done    
             current = nation['name'] + ': ' + TurnState(int(nation['turnplayed'])).name
